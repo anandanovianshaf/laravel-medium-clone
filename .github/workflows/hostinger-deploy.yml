@@ -2,7 +2,7 @@ name: Hostinger Deploy
 
 on:
   push:
-    branches: [ tests ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -47,10 +47,13 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run Pest/Browser Tests
+      - name: Build Assets
+        run: npm run build
+
+      - name: Run PHPUnit Tests
         run: |
           if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
-            ./vendor/bin/pest --ci --parallel
+            run: ./vendor/bin/pest --ci --parallel
           else
             echo "⚠️ No PHPUnit configuration found, skipping tests"
           fi
@@ -226,8 +229,8 @@ jobs:
 
             # Ensure we're on the correct branch
             git fetch origin
-            git checkout tests
-            git reset --hard origin/tests
+            git checkout main
+            git reset --hard origin/main
 
             echo "📦 Installing Composer dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
@@ -281,6 +284,6 @@ jobs:
             # Show deployment info
             echo ""
             echo "📊 Deployment Information:"
-            echo "   Branch: tests"
+            echo "   Branch: main"
             echo "   Commit: $(git rev-parse --short HEAD)"
             echo "   Date: $(date)"
