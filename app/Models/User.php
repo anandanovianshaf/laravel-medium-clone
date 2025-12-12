@@ -32,7 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail, HasMedia
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * The attributses that should be hidden for serialization.
      *
      * @var list<string>
      */
