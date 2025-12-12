@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PostController extends Controller
 {
@@ -17,16 +18,10 @@ class PostController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
-
         $query =  Post::with(['user', 'media'])
             ->where('published_at', '<=', now())
             ->withCount('claps')
             ->latest();
-        if ($user) {
-            $ids = $user->following()->pluck('users.id');
-            $query->whereIn('user_id', $ids);
-        }
 
         $posts = $query->simplePaginate(5);
         return view('post.index', [
@@ -53,17 +48,54 @@ class PostController extends Controller
     {
         $data = $request->validated();
 
-        // $image = $data['image'];
-        // unset($data['image']);
         $data['user_id'] = Auth::id();
+        
+        // Convert datetime-local string to Carbon instance
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone info)
+        // datetime-local sends time in user's local timezone
+        if (isset($data['published_at']) && $data['published_at']) {
+            try {
+                // Parse datetime-local - Carbon will interpret it in the default timezone (UTC)
+                $publishedAt = Carbon::createFromFormat('Y-m-d\TH:i', $data['published_at'], config('app.timezone'));
+                
+                // Ensure it's in UTC timezone for database storage
+                $publishedAt->setTimezone(config('app.timezone'));
+                
+                // Compare with now() in the same timezone
+                // If published_at is greater than now(), set to now() so post appears immediately
+                // This ensures posts always appear when created, regardless of timestamp
+                if ($publishedAt->gt(now())) {
+                    $data['published_at'] = now();
+                } else {
+                    $data['published_at'] = $publishedAt;
+                }
+            } catch (\Exception $e) {
+                // If parsing fails, default to now()
+                \Log::warning('Failed to parse published_at: ' . $e->getMessage());
+                $data['published_at'] = now();
+            }
+        } else {
+            $data['published_at'] = now();
+        }
 
-        // $imagePath = $image->store('posts', 'public');
-        // $data['image'] = $imagePath;
+        // Remove image from data array as it's handled separately
+        unset($data['image']);
 
         $post = Post::create($data);
 
-        $post->addMediaFromRequest('image')
-            ->toMediaCollection();
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            try {
+                $post->addMediaFromRequest('image')
+                    ->toMediaCollection('default');
+            } catch (\Exception $e) {
+                // Log error and redirect back with error message
+                \Log::error('Failed to upload post image: ' . $e->getMessage());
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+            }
+        }
 
         return redirect()->route('dashboard');
     }
@@ -102,12 +134,55 @@ class PostController extends Controller
             abort(403);
         }
         $data = $request->validated();
+        
+        // Convert datetime-local string to Carbon instance
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone info)
+        // datetime-local sends time in user's local timezone
+        if (isset($data['published_at']) && $data['published_at']) {
+            try {
+                // Parse datetime-local - Carbon will interpret it in the default timezone (UTC)
+                $publishedAt = Carbon::createFromFormat('Y-m-d\TH:i', $data['published_at'], config('app.timezone'));
+                
+                // Ensure it's in UTC timezone for database storage
+                $publishedAt->setTimezone(config('app.timezone'));
+                
+                // Compare with now() in the same timezone
+                // If published_at is greater than now(), set to now() so post appears immediately
+                // This ensures posts always appear when created, regardless of timestamp
+                if ($publishedAt->gt(now())) {
+                    $data['published_at'] = now();
+                } else {
+                    $data['published_at'] = $publishedAt;
+                }
+            } catch (\Exception $e) {
+                // If parsing fails, keep existing published_at or default to now()
+                \Log::warning('Failed to parse published_at: ' . $e->getMessage());
+                $data['published_at'] = $post->published_at ?? now();
+            }
+        } else {
+            $data['published_at'] = $post->published_at ?? now();
+        }
+
+        // Remove image from data array as it's handled separately
+        $hasImage = isset($data['image']);
+        unset($data['image']);
 
         $post->update($data);
 
-        if ($data['image'] ?? false) {
-            $post->addMediaFromRequest('image')
-                ->toMediaCollection();
+        // Handle image upload
+        if ($hasImage && $request->hasFile('image')) {
+            try {
+                // Clear existing media first (since it's singleFile collection)
+                $post->clearMediaCollection('default');
+                $post->addMediaFromRequest('image')
+                    ->toMediaCollection('default');
+            } catch (\Exception $e) {
+                // Log error and redirect back with error message
+                \Log::error('Failed to upload post image: ' . $e->getMessage());
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+            }
         }
 
         return redirect()->route('myPosts');
@@ -128,18 +203,12 @@ class PostController extends Controller
 
     public function category(Category $category)
     {
-        $user = auth()->user();
-
         $query = $category->posts()
             ->where('published_at', '<=', now())
             ->with(['user', 'media'])
             ->withCount('claps')
             ->latest();
 
-        if ($user) {
-            $ids = $user->following()->pluck('users.id');
-            $query->whereIn('user_id', $ids);
-        }
         $posts = $query->simplePaginate(5);
 
         return view('post.index', [

@@ -30,11 +30,13 @@
             </span>
         </div>
     </div>
+    @if($post->imageUrl())
     <a href="{{ route('post.show', [
             'username' => $post->user->username,
             'post' => $post->slug
         ]) }}">
         <img class="w-48 h-full max-h-64 object-cover rounded-r-lg"
-        src="{{ $post->imageUrl() }}" alt="" />
+        src="{{ $post->imageUrl() }}" alt="{{ $post->title }}" />
     </a>
+    @endif
 </div>

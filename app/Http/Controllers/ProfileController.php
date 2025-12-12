@@ -27,11 +27,10 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        // $image = $data['image'] ?? null;
-        
-        // if ($image) {
-        //     $data['image'] = $image->store('avatars', 'public');
-        // }
+
+        // Remove image from data array as it's handled separately
+        $hasImage = isset($data['image']);
+        unset($data['image']);
 
         $user = $request->user();
         $user->fill($data);
@@ -42,9 +41,20 @@ class ProfileController extends Controller
 
         $user->save();
 
-        if ($request->hasFile('image')) {
-            $user->addMediaFromRequest('image')
-                ->toMediaCollection('avatar');
+        // Handle image upload
+        if ($hasImage && $request->hasFile('image')) {
+            try {
+                // Clear existing media first (since it's singleFile collection)
+                $user->clearMediaCollection('avatar');
+                $user->addMediaFromRequest('image')
+                    ->toMediaCollection('avatar');
+            } catch (\Exception $e) {
+                // Log error and redirect back with error message
+                \Log::error('Failed to upload profile image: ' . $e->getMessage());
+                return Redirect::route('profile.edit')
+                    ->withInput()
+                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+            }
         }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');

@@ -54,7 +54,9 @@
 
                 <!-- Content Section -->
                 <div class="mt-8">
-                    <img src="{{ $post->imageUrl() }}" alt="{{ $post->title }}" class="w-full">
+                    @if($post->imageUrl())
+                        <img src="{{ $post->imageUrl() }}" alt="{{ $post->title }}" class="w-full mb-4">
+                    @endif
 
                     <div class="mt-4">
                         {{ $post->content }}
