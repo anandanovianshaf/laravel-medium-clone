@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClapController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -80,6 +81,12 @@ Route::middleware(['auth', 'verified'])->group(function() {
 
     Route::post('/clap/{post}', [ClapController::class, 'clap'])
         ->name('clap');
+
+    Route::post('/post/{post}/comment', [CommentController::class, 'store'])
+        ->name('comment.store');
+
+    Route::delete('/comment/{comment}', [CommentController::class, 'destroy'])
+        ->name('comment.destroy');
 });
 
 Route::middleware('auth')->group(function () {

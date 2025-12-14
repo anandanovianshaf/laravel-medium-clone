@@ -1,10 +1,10 @@
-<ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 dark:text-gray-400 justify-center">
+<ul class="flex flex-wrap text-sm font-medium text-center text-slate-400 justify-center">
     <li class="me-2">
         <a href="{{ route('dashboard') }}" class="{{
          request()->routeIs('post.byCategory')
-         ? 'inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white'
-         : 'inline-block px-4 py-2 text-white bg-blue-600 rounded-lg active' }}">
-            All
+         ? 'inline-block px-4 py-2 rounded-lg hover:text-slate-200 hover:bg-[#162032] hover:border-[#23304A] border border-transparent transition-colors'
+         : 'inline-block px-4 py-2 text-white bg-violet-600 border border-violet-500 rounded-lg active' }}">
+            All Repos
         </a>
     </li>
 
@@ -12,8 +12,8 @@
         <li class="me-2">
             <a href="{{ route('post.byCategory', $category->id) }}" class="{{
              isset($currentCategory) && $currentCategory->id === $category->id
-             ? 'inline-block px-4 py-2 text-white bg-blue-600 rounded-lg active'
-             : 'inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white' }}">
+             ? 'inline-block px-4 py-2 text-white bg-violet-600 border border-violet-500 rounded-lg active'
+             : 'inline-block px-4 py-2 rounded-lg hover:text-slate-200 hover:bg-[#162032] hover:border-[#23304A] border border-transparent transition-colors' }}">
                 {{ $category->name }}
             </a>
         </li>

@@ -11,8 +11,16 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                'orbit': {
+                    900: '#0B1120',
+                    800: '#162032',
+                    700: '#23304A',
+                },
+            },
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                mono: ['JetBrains Mono', 'Courier New', 'monospace'],
             },
         },
     },
