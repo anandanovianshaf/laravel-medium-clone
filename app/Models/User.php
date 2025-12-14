@@ -60,13 +60,15 @@ class User extends Authenticatable implements MustVerifyEmail, HasMedia
         $this
             ->addMediaConversion('avatar')
             ->width(128)
-            ->crop(128, 128);
+            ->crop(128, 128)
+            ->nonQueued();
     }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('avatar')
-            ->singleFile();
+            ->singleFile()
+            ->useDisk('public');
     }
 
     public function posts()
@@ -90,10 +92,33 @@ class User extends Authenticatable implements MustVerifyEmail, HasMedia
         if (!$media) {
             return null;
         }
-        if ($media->hasGeneratedConversion('avatar')) {
-            return $media->getUrl('avatar');
+        
+        try {
+            // Get URL from media library
+            $url = null;
+            if ($media->hasGeneratedConversion('avatar')) {
+                $url = $media->getUrl('avatar');
+            } else {
+                $url = $media->getUrl();
+            }
+            
+            // Ensure URL starts with /storage/ for public disk
+            if ($url && $media->disk === 'public') {
+                // If URL doesn't start with /storage/, fix it
+                if (!str_starts_with($url, '/storage/') && !str_starts_with($url, 'http')) {
+                    // Extract the path after storage/app/public
+                    $path = $media->getPath();
+                    $relativePath = str_replace(storage_path('app/public'), '', $path);
+                    $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+                    $url = '/storage/' . $relativePath;
+                }
+            }
+            
+            return $url;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to get media URL: ' . $e->getMessage());
+            return null;
         }
-        return $media->getUrl();
     }
 
     public function isFollowedBy(?User $user)

@@ -11,6 +11,38 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/test-image', function () {
+    $post = \App\Models\Post::with('media')->first();
+    if (!$post) {
+        return 'No post found';
+    }
+    
+    $media = $post->getFirstMedia();
+    if (!$media) {
+        return 'No media found for post ID: ' . $post->id;
+    }
+    
+    $imageUrl = $post->imageUrl();
+    $mediaUrl = $media->getUrl();
+    $mediaPath = $media->getPath();
+    
+    return [
+        'post_id' => $post->id,
+        'post_title' => $post->title,
+        'media_id' => $media->id,
+        'media_url_from_library' => $mediaUrl,
+        'imageUrl_method' => $imageUrl,
+        'media_path' => $mediaPath,
+        'file_exists' => file_exists($mediaPath),
+        'disk' => $media->disk,
+        'collection_name' => $media->collection_name,
+        'file_name' => $media->file_name,
+        'app_url' => config('app.url'),
+        'storage_url_config' => config('filesystems.disks.public.url'),
+        'test_direct_url' => config('app.url') . '/storage/' . str_replace(storage_path('app/public'), '', $mediaPath),
+    ];
+});
+
 Route::get('/@{user:username}', [PublicProfileController::class, 'show'])
     ->name('profile.show');
 

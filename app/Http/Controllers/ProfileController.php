@@ -47,13 +47,16 @@ class ProfileController extends Controller
                 // Clear existing media first (since it's singleFile collection)
                 $user->clearMediaCollection('avatar');
                 $user->addMediaFromRequest('image')
+                    ->usingName($user->name ?? 'avatar')
+                    ->usingFileName($request->file('image')->getClientOriginalName())
                     ->toMediaCollection('avatar');
             } catch (\Exception $e) {
                 // Log error and redirect back with error message
                 \Log::error('Failed to upload profile image: ' . $e->getMessage());
+                \Log::error('Stack trace: ' . $e->getTraceAsString());
                 return Redirect::route('profile.edit')
                     ->withInput()
-                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+                    ->withErrors(['image' => 'Failed to upload image: ' . $e->getMessage()]);
             }
         }
 

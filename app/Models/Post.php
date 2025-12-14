@@ -35,17 +35,20 @@ class Post extends Model implements HasMedia
     {
         $this
             ->addMediaConversion('preview')
-            ->width(400);
+            ->width(400)
+            ->nonQueued();
 
         $this
             ->addMediaConversion('large')
-            ->width(1200);
+            ->width(1200)
+            ->nonQueued();
     }
     
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('default')
-            ->singleFile();
+            ->singleFile()
+            ->useDisk('public');
     }
 
     /**
@@ -87,9 +90,32 @@ class Post extends Model implements HasMedia
         if (!$media) {
             return null;
         }
-        if ($media->hasGeneratedConversion($conversionName)) {
-            return $media->getUrl($conversionName);
+        
+        try {
+            // Get URL from media library
+            $url = null;
+            if ($conversionName && $media->hasGeneratedConversion($conversionName)) {
+                $url = $media->getUrl($conversionName);
+            } else {
+                $url = $media->getUrl();
+            }
+            
+            // Ensure URL starts with /storage/ for public disk
+            if ($url && $media->disk === 'public') {
+                // If URL doesn't start with /storage/, fix it
+                if (!str_starts_with($url, '/storage/') && !str_starts_with($url, 'http')) {
+                    // Extract the path after storage/app/public
+                    $path = $media->getPath();
+                    $relativePath = str_replace(storage_path('app/public'), '', $path);
+                    $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+                    $url = '/storage/' . $relativePath;
+                }
+            }
+            
+            return $url;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to get media URL: ' . $e->getMessage());
+            return null;
         }
-        return $media->getUrl();
     }
 }

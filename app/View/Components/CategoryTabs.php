@@ -9,12 +9,14 @@ use Illuminate\View\Component;
 
 class CategoryTabs extends Component
 {
+    public $currentCategory;
+
     /**
      * Create a new component instance.
      */
-    public function __construct()
+    public function __construct($currentCategory = null)
     {
-        
+        $this->currentCategory = $currentCategory;
     }
 
     /**
@@ -25,6 +27,7 @@ class CategoryTabs extends Component
         $categories = Category::get();
         return view('components.category-tabs', [
             'categories' => $categories,
+            'currentCategory' => $this->currentCategory,
         ]);
     }
 }

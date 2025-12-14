@@ -86,14 +86,18 @@ class PostController extends Controller
         // Handle image upload
         if ($request->hasFile('image')) {
             try {
+                // With ->nonQueued() in registerMediaConversions(), conversions are created synchronously
                 $post->addMediaFromRequest('image')
+                    ->usingName($data['title'] ?? 'post-image')
+                    ->usingFileName($request->file('image')->getClientOriginalName())
                     ->toMediaCollection('default');
             } catch (\Exception $e) {
                 // Log error and redirect back with error message
                 \Log::error('Failed to upload post image: ' . $e->getMessage());
+                \Log::error('Stack trace: ' . $e->getTraceAsString());
                 return redirect()->back()
                     ->withInput()
-                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+                    ->withErrors(['image' => 'Failed to upload image: ' . $e->getMessage()]);
             }
         }
 
@@ -174,14 +178,18 @@ class PostController extends Controller
             try {
                 // Clear existing media first (since it's singleFile collection)
                 $post->clearMediaCollection('default');
+                // With ->nonQueued() in registerMediaConversions(), conversions are created synchronously
                 $post->addMediaFromRequest('image')
+                    ->usingName($data['title'] ?? 'post-image')
+                    ->usingFileName($request->file('image')->getClientOriginalName())
                     ->toMediaCollection('default');
             } catch (\Exception $e) {
                 // Log error and redirect back with error message
                 \Log::error('Failed to upload post image: ' . $e->getMessage());
+                \Log::error('Stack trace: ' . $e->getTraceAsString());
                 return redirect()->back()
                     ->withInput()
-                    ->withErrors(['image' => 'Failed to upload image. Please try again.']);
+                    ->withErrors(['image' => 'Failed to upload image: ' . $e->getMessage()]);
             }
         }
 
@@ -213,6 +221,7 @@ class PostController extends Controller
 
         return view('post.index', [
             'posts' => $posts,
+            'currentCategory' => $category,
         ]);
     }
 
