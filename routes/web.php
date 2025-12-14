@@ -56,6 +56,9 @@ Route::get('/@{username}/{post:slug}', [PostController::class, 'show'])
 Route::get('/category/{category}', [PostController::class, 'category'])
     ->name('post.byCategory');
 
+Route::get('/search', [PostController::class, 'search'])
+    ->name('post.search');
+
 Route::middleware(['auth', 'verified'])->group(function() {
 
     Route::get('/post/create', [PostController::class, 'create'])

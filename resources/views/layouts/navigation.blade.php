@@ -12,6 +12,99 @@
 
             </div>
 
+            <div class="flex items-center gap-4 flex-1 justify-center max-w-md mx-4">
+                <!-- Search Input -->
+                <div x-data="{ 
+                    query: '',
+                    results: [],
+                    loading: false,
+                    showResults: false,
+                    search() {
+                        if (this.query.length < 2) {
+                            this.results = [];
+                            this.showResults = false;
+                            return;
+                        }
+                        this.loading = true;
+                        axios.get('/search', { 
+                            params: { q: this.query },
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                            .then(response => {
+                                this.results = response.data.posts.data || [];
+                                this.showResults = true;
+                                this.loading = false;
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                this.results = [];
+                                this.loading = false;
+                            });
+                    },
+                    hideResults() {
+                        setTimeout(() => this.showResults = false, 200);
+                    }
+                }" class="relative w-full" @click.away="showResults = false">
+                    <input 
+                        type="text" 
+                        x-model="query"
+                        @input="search()"
+                        @focus="query.length >= 2 && results.length > 0 ? showResults = true : null"
+                        placeholder="Search logs..."
+                        class="w-full bg-[#050912] border border-[#23304A] text-white font-mono focus:border-cyan-400 focus:ring-0 rounded-md shadow-sm px-4 py-2 text-sm"
+                    >
+                    <div x-show="loading" class="absolute right-3 top-2.5">
+                        <svg class="animate-spin h-5 w-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    
+                    <!-- Search Results Dropdown -->
+                    <div 
+                        x-show="showResults && (results.length > 0 || query.length >= 2)"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100"
+                        x-transition:leave-end="opacity-0 scale-95"
+                        class="absolute z-50 mt-2 w-full bg-[#162032] border border-[#23304A] rounded-lg shadow-lg max-h-96 overflow-y-auto"
+                        style="display: none;"
+                    >
+                        <template x-if="results.length === 0 && query.length >= 2 && !loading">
+                            <div class="p-4 text-center text-slate-400 font-mono text-sm">
+                                No logs found
+                            </div>
+                        </template>
+                        <template x-if="results.length > 0">
+                            <div>
+                                <template x-for="post in results" :key="post.id">
+                                    <a 
+                                        :href="`/@${post.user.username}/${post.slug}`"
+                                        class="block px-4 py-3 hover:bg-[#23304A] border-b border-[#23304A] last:border-b-0 transition-colors"
+                                    >
+                                        <div class="font-semibold text-slate-200 text-sm mb-1" x-text="post.title"></div>
+                                        <div class="text-xs text-slate-400 font-mono" x-text="post.user.name"></div>
+                                    </a>
+                                </template>
+                                <div class="p-2 border-t border-[#23304A]">
+                                    <a 
+                                        :href="`/search?q=${encodeURIComponent(query)}`"
+                                        class="block text-center text-sm text-cyan-400 hover:text-cyan-300 font-mono"
+                                    >
+                                        View all results →
+                                    </a>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex items-center gap-4">
                 <a href="{{ route('post.create') }}" class="flex items-center">
                     <x-primary-button>

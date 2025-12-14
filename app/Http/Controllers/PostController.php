@@ -227,6 +227,52 @@ class PostController extends Controller
         ]);
     }
 
+    /**
+     * Search posts by title or content
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (empty($query) || strlen($query) < 2) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'posts' => [
+                        'data' => [],
+                        'current_page' => 1,
+                        'per_page' => 5,
+                        'total' => 0,
+                    ]
+                ]);
+            }
+            return view('post.search', [
+                'posts' => collect([])->paginate(5),
+                'query' => $query,
+            ]);
+        }
+
+        $posts = Post::where('published_at', '<=', now())
+            ->where(function($q) use ($query) {
+                $q->where('title', 'LIKE', "%{$query}%")
+                  ->orWhere('content', 'LIKE', "%{$query}%");
+            })
+            ->with(['user', 'media', 'category'])
+            ->withCount('claps')
+            ->latest()
+            ->simplePaginate(5);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'posts' => $posts,
+            ]);
+        }
+
+        return view('post.search', [
+            'posts' => $posts,
+            'query' => $query,
+        ]);
+    }
+
     public function myPosts()
     {
         $user = auth()->user();
